@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from .models import Room
+from .models import Room, Book
 from .forms import RoomForm
 
 def loginPage(request):
@@ -36,7 +36,8 @@ def logoutPage(request):
 
 def home(request):
     rooms = Room.objects.all()
-    context = {'rooms' : rooms}
+    books = Book.objects.all()
+    context = {'rooms' : rooms, 'books' : books}
     return render(request, 'base/home.html', context)
 
 def room(request, pk):

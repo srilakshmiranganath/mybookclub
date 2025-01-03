@@ -1,8 +1,19 @@
-<h3>Reading History</h3>
-<hr>
-
-{% for book in books %}
-    <div>
-        <p>{{book}}</p>
+<div class="topics">
+    <div class="topics__header">
+      <h2>Reading History</h2>
     </div>
-{% endfor %}
+    <ul class="topics__list">
+    {% for book in books %}
+      <li>
+        <a href="#">{{book}}</a>
+      </li>
+    {% endfor %}
+    </ul>
+    <a class="btn btn--link" href="topics.html">
+      More
+      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <title>chevron-down</title>
+        <path d="M16 21l-13-13h-3l16 16 16-16h-3l-13 13z"></path>
+      </svg>
+    </a>
+  </div>

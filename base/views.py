@@ -91,12 +91,18 @@ def userProfile(request, pk):
 def createRoom(request):
     form = RoomForm()
     if request.method == 'POST':
-        form = RoomForm(request.POST)
-        if form.is_valid():
-            room = form.save(commit=False)
-            room.host = request.user
-            room.save()
-            return redirect('home')
+        book_name = request.POST.get('book')
+        book, created = Book.objects.get_or_create(name=book_name)
+
+        room = Room.objects.create(
+            host=request.user,
+            book=book,
+            name=request.POST.get('name'),
+            description=request.POST.get('description'),
+            
+        )
+        room.participants.add(request.user)
+        return redirect('home')
     context = {'form' : form}
     return render(request, 'base/room_form.html', context)
 
@@ -109,10 +115,13 @@ def updateRoom(request, pk):
         return HttpResponse('You are not allowed here!')
     
     if request.method == 'POST':
-        form = RoomForm(request.POST, instance=room)
-        if form.is_valid():
-            form.save()
-            return redirect('home')
+        book_name = request.POST.get('book')
+        book, created = Book.objects.get_or_create(name=book_name)
+        room.name = request.POST.get('name')
+        room.book = book
+        room.description = request.POST.get('description')
+        room.save()
+        return redirect('home')
 
     context = {'form' : form}
     return render(request, 'base/room_form.html', context)
@@ -140,3 +149,8 @@ def deleteMessage(request, pk):
         message.delete()
         return redirect('home')
     return render(request, 'base/delete.html', {'obj' : message})
+
+
+@login_required(login_url='/login')
+def updateUser(request):
+    return render(request, 'base/update-user.html', {})

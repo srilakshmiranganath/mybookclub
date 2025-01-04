@@ -90,7 +90,7 @@
                         </div>
                         <span>@{{message.user.username}}</span>
                       </a>
-                      <span class="thread__date">{{meaasge.created|timesince}} ago</span>
+                      <span class="thread__date">{{message.created|timesince}} ago</span>
                     </div>
                     {% if request.user == message.user %}
                     <a href="{% url 'delete-message' message.id %}">
@@ -114,7 +114,9 @@
             </div>
           </div>
           <div class="room__message">
-            <form action="#"><input name="" placeholder="Write your message here..." /></form>
+            <form action="" method="POST">
+              {% csrf_token %}
+              <input name="body" placeholder="Write your message here..." /></form>
           </div>
         </div>
         <!-- Room End -->

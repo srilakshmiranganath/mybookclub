@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
-from .models import Room, Book, Message, User
+from .models import Room, Book, Message, User, Invitation
 from .forms import RoomForm, UserForm, MyUserCreationForm
 
 def loginPage(request):
@@ -23,7 +23,7 @@ def loginPage(request):
 
         if user is not None:
             login(request, user)
-            return redirect('home')
+            return redirect('user-profile', pk=user.id)
         else:
             messages.error(request, 'Incorrect Username or Password.')
 
@@ -65,7 +65,7 @@ def room(request, pk):
     room_messages = room.message_set.all()
     participants = room.participants.all()
 
-    if request.method == 'POST':
+    if request.method == 'POST' and 'body' in request.POST:
         room_message = Message.objects.create(
             user=request.user,
             room=room,
@@ -74,6 +74,23 @@ def room(request, pk):
         room.participants.add(request.user)
         return redirect('room', pk=room.id)
     
+    if request.method == 'POST' and 'invite_email' in request.POST:
+        email = request.POST.get('invite_email')
+
+        try:
+            receiver = User.objects.get(email=email)
+        except:
+            HttpResponse('User with that email does not exist.')
+
+        if request.user != room.host:
+            return HttpResponse('You are not allowed to send invitations.')
+        
+        existing_invitation = Invitation.objects.filter(room=room, receiver=receiver, status='PENDING').exists()
+        if existing_invitation or receiver in participants:
+            return HttpResponse('User hase been sent an invitation or is already a participant.')
+        
+        Invitation.objects.create(sender=request.user, receiver=receiver, room=room)
+        return HttpResponse(f"Invitation sent to {receiver.username}.")
     context = {'room' : room, 'room_messages' : room_messages, 'participants' : participants}
     return render(request, 'base/room.html', context)
 
@@ -82,8 +99,44 @@ def userProfile(request, pk):
     rooms = user.room_set.all()
     room_messages = user.message_set.all()
     books = Book.objects.all()
-    context = {'user' : user, 'rooms' : rooms, 'room_messages' : room_messages, 'books' : books}
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        invitation_id = request.POST.get('invitation_id')
+
+        if action == 'accept':
+            return acceptInvitation(request, invitation_id)
+        elif action == 'reject':
+            return rejectInvitation(request, invitation_id)
+
+    if request.user.id == user.id:
+        invitations = user.received_invitations.filter(status='PENDING')
+    else:
+        invitations = None
+
+    context = {'user' : user, 'rooms' : rooms, 'room_messages' : room_messages, 'books' : books, 'invitations' : invitations}
     return render(request, 'base/profile.html', context)
+
+def acceptInvitation(request, invitation_id):
+    invitation = Invitation.objects.get(id=invitation_id, receiver=request.user)
+
+    if invitation.status != 'PENDING':
+        return HttpResponse('Invitation no longer valid.')
+    
+    invitation.room.participants.add(request.user)
+    invitation.status = 'ACCEPTED'
+    invitation.save()
+    return render(request, 'base/profile.html', {'invitation' : invitation})
+
+def rejectInvitation(request, invitation_id):
+    invitation = Invitation.objects.get(id=invitation_id, receiver=request.user)
+
+    if invitation.status != 'PENDING':
+        return HttpResponse('Invitation no longer valid.') 
+
+    invitation.status = 'REJECTED'
+    invitation.save()
+    return render(request, 'base/profile.html', {'invitation' : invitation})   
 
 @login_required(login_url='/login')
 def createRoom(request):
@@ -147,7 +200,6 @@ def deleteMessage(request, pk):
         message.delete()
         return redirect('home')
     return render(request, 'base/delete.html', {'obj' : message})
-
 
 @login_required(login_url='/login')
 def updateUser(request):

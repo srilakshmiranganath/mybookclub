@@ -30,6 +30,27 @@
               accusamus repudiandae quis ab ex exercitationem rem?
             </p>
           </div>
+
+          <div class="profile__about">
+            <h3>Pending Invitations</h3>
+            {% if invitations %}
+            <ul>
+              {% for invitation in invitations %}
+                <li>
+                  Room: {{ invitation.room.name }} - Sent by: {{ invitation.sender.username }}
+                  <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                     <input type="hidden" name="invitation_id" value="{{invitation.id}}">
+                    <button type="submit" name="action" value="accept">Accept</button>
+                    <button type="submit" name="action" value="reject">Decline</button>
+                  </form>
+                </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p>No pending Invitations.</p>
+          {% endif %}
+          </div>
         </div>
 
         <div class="roomList__header">

@@ -47,3 +47,22 @@ class Message(models.Model):
 
     def __str__(self):
         return self.body[0:50]
+    
+class Invitation(models.Model):
+    INVITATION_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invitations")
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_invitations")
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=INVITATION_STATUS_CHOICES, default='PENDING')
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return f"Invitation from {self.sender.name or self.sender.username} to {self.receiver.name or self.receiver.username} for room {self.room.name}"
